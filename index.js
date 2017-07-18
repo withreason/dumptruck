@@ -20,7 +20,7 @@ const awsCredPath   = path.join(files.resolveHome(), '.aws', 'credentials');
 inquirer.registerPrompt('autocomplete', inquirerauto);
 var program = require('commander');
 
-const localpath   = path.join(path.dirname(fs.realpathSync(__filename)));
+const localpath   = process.cwd();
 
 program
 .version('0.1.0')
