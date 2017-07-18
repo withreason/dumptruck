@@ -24,12 +24,8 @@
     "inquirer": "^3.2.0",
     "inquirer-autocomplete-prompt": "^0.11.0",
     "js-yaml": "^3.9.0",
-    "lodash": "^4.17.4",
-    "minimist": "^1.2.0",
     "path": "^0.12.7",
     "preferences": "^0.2.1",
-    "promise": "^8.0.1",
-    "simple-git": "^1.73.0",
-    "touch": "^3.1.0"
+    "promise": "^8.0.1"
   }
 }

@@ -8,8 +8,6 @@ const inquirer      = require('inquirer');
 const inquirerauto  = require('inquirer-autocomplete-prompt');
 const Preferences   = require('preferences');
 const Spinner       = CLI.Spinner;
-const _             = require('lodash');
-const touch         = require('touch');
 const fs            = require('fs');
 const files         = require('./lib/files');
 const AWS           = require('aws-sdk');
@@ -256,7 +254,7 @@ function startlogs() {
             clear();
             console.log('🚛   ' + chalk.underline('' + selectOptions.lambda + ' : ' + selectOptions.region + '\n'));
         }
-        var pagedParams = _.clone(params);
+        var pagedParams = Object.assign({},params);
         pagedParams.nextToken = nextToken;
         cloudwatchlogs.filterLogEvents(pagedParams, function (error, data) {
             bindCountdown.stop();
