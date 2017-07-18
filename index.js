@@ -234,7 +234,11 @@ function startlogs() {
     var bindCountdown = new Spinner('Binding to ' + selectOptions.lambda + ' in ' + selectOptions.region + '...  ', ['⣾','⣽','⣻','⢿','⡿','⣟','⣯','⣷']);
     bindCountdown.start();
     var lastEventIds = [];
+    var credentials = new AWS.SharedIniFileCredentials({
+        profile: selectOptions.profile
+    });
     var cloudwatchlogs = new AWS.CloudWatchLogs({
+        credentials,
         region: selectOptions.region
     });
 
