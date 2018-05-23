@@ -1,16 +1,17 @@
 {
-  "name": "dumptruck.io",
+  "name": "dumptruck",
   "version": "0.0.1",
   "description": "Lazy logging for AWS lambda",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "postinstall": "node postinstall.js"
   },
   "bin": {
     "dumptruck": "./index.js",
     "dtrk": "./index.js"
   },
-  "author": "",
+  "author": "withreason.co.uk",
   "license": "ISC",
   "dependencies": {
     "aws-sdk": "^2.86.0",

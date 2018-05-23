@@ -1,0 +1,118 @@
+html, body {
+    background: #273740;
+    font-family: "Lato", Sans-Serif;
+    padding:0;
+    margin:0;
+}
+
+
+.heading{
+  image-rendering: pixelated;
+  background: url(logo.png);
+  height: 100px;
+  width: 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  text-indent: 99999px;
+  white-space: nowrap;
+  overflow: hidden;
+  color: transparent;
+}
+
+.window, .intro{
+    width: 100%;
+    max-width: 810px;
+    margin: 0 auto;
+    font-size: 24px;
+    line-height: 36px;
+    color: #fff;
+    text-align: center;
+}
+.intro a{
+    color:#fff;
+}
+.intro pre{
+  background: #f6f5f0;
+  color:#000;
+  box-shadow: 0 0.25rem 0.5rem rgba(0,0,0,0.25);
+  padding: 20px 0;
+}
+.window{
+  box-shadow: 0 0.25rem 0.5rem rgba(0,0,0,0.25);
+  border-radius: 0;
+  transition: 0.3s transform;
+  border-radius: 0px;
+}
+
+.window:hover{
+    transform: translate(0, 15px) scale(1.05,1.05);
+}
+
+.bar {
+  background: #fff;
+  height: 36px;
+  border-radius: 2px 2px 0 0;
+}
+.btn, .btn::before, .btn::after {
+  width: 12px;
+  height: 12px;
+  border-radius: 100%;
+  display: block;
+}
+.btn {
+  background: #f6b73e;
+  position: relative;
+  margin-left: 38px;
+  top: 12px;
+}
+.btn::before, .btn::after {
+  content: " ";
+  position: absolute;
+}
+.btn::before {
+  background: #f55551;
+  margin-left: -20px;
+}
+.btn::after {
+  background: #32c146;
+  margin-left: 20px;
+}
+.panel{
+  background: #000;
+  background-image:url('scrgrab.gif');
+  height:350px;
+  background-size: 100% auto;
+  background-repeat: no-repeat;
+}
+
+.wrap {
+    max-width: 1000px;
+    width:100%;
+    margin: 0 auto;
+    padding: 20px 5%;
+}
+.tagline {
+    font-size: 1.6rem;
+    font-weight: 200;
+    text-align: center;
+    margin-bottom: 40px;
+    color: #D5DEE8;
+}
+.intro-img{
+  box-shadow: 0 5px 20px 0 rgba(0, 0, 0, 0.2);
+    border: 1px solid #223156;
+}
+
+
+.content__wrapper{
+    width:100%;
+    background: #f6f5f0;
+}
+.content{
+    color:#333;
+    width: 100%;
+    max-width: 810px;
+    margin: 0 auto;
+    padding:20px;
+}

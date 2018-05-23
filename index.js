@@ -16,6 +16,7 @@ const yaml          = require('js-yaml');
 const fuzzy         = require('fuzzy');
 const Promise       = require('promise');
 const awsCredPath   = path.join(files.resolveHome(), '.aws', 'credentials');
+const exec          = require('child_process').exec;
 
 inquirer.registerPrompt('autocomplete', inquirerauto);
 var program = require('commander');
@@ -26,12 +27,19 @@ program
 .version('0.1.0')
 .usage(figlet.textSync(' Dumptruck', { horizontalLayout: 'full', font:'ANSI Shadow'}))
 .usage(`
-    dumptruck (or dtrk for short) should guide you through the log selection process,
-    argv flags coming soon.
+    dumptruck should guide you through the log selection process.
+
+    Or you can specify arguments:
+    dumptruck -p  "default"  -r "eu-west-1" -l "your-lambda-name-here"
+
+    Optional Arguments:
+    -p, --profile   Pre select AWS profile
+    -r, --region    Pre select AWS region
+    -l, --lambda    Pre select Lambda
 `)
-//.option('-p, --profile', 'Pre select AWS profile')
-//.option('-r, --region', 'Pre select AWS region')
-//.option('-l, --lambda', 'Pre select Lambda')
+.option('-p, --profile [value]', 'Pre select AWS profile')
+.option('-r, --region [value]', 'Pre select AWS region')
+.option('-l, --lambda [value]', 'Pre select Lambda')
 .parse(process.argv);
 
 var prefs = new Preferences('dumptruck.io',{
@@ -40,16 +48,17 @@ var prefs = new Preferences('dumptruck.io',{
     'awsLambda':false
 });
 
-const truckLoader = [
-    '       🚛 ⣾',
-    '      🚛  ⣽',
-    '     🚛   ⣻',
-    '    🚛    ⢿',
-    '   🚛     ⡿',
-    '  🚛      ⣟',
-    ' 🚛       ⣯',
-    '🚛        ⣷'
+const truckAnimation = [
+    '       🚛 ',
+    '      🚛  ',
+    '     🚛   ',
+    '    🚛    ',
+    '   🚛     ',
+    '  🚛      ',
+    ' 🚛       ',
+    '🚛        '
 ];
+const truckLoader = ['⣾','⣽','⣻','⢿','⡿','⣟','⣯','⣷'].map((l,k)=>(truckAnimation[k]+l));
 
 const awsLambdaRegions = [
     {'region':'US East (Ohio)','unique':'us-east-2'},
@@ -82,21 +91,27 @@ const dateSort = function (a, b) {
     return Date.parse(b.LastModified) - Date.parse(a.LastModified);
 };
 
-var intro = ['',
-    '  ╔════════════════════════════════════════════════════════════════════════════╗ ',
-    '  ║   (c)  http://withreason.co.uk 2017 || Part of the http://sls.zone suite   ║ ',
-    '  ╚════════════════════════════════════════════════════════════════════════════╝ ',
-    '                                                                                '
-];
+function showIntro(){
+    var intro = ['',
+        '  ╔════════════════════════════════════════════════════════════════════════════╗ ',
+        '  ║   (c)  http://withreason.co.uk 2017 || Part of the http://sls.zone suite   ║ ',
+        '  ╚════════════════════════════════════════════════════════════════════════════╝ ',
+        '                                                                                '
+    ];
+    clear();
+    console.log('\n' +
+        chalk.red(
+            figlet.textSync(' Dumptruck', { horizontalLayout: 'full', font:'ANSI Shadow'})
+        ) + chalk.yellow(intro.join('\n'))
+    );
+}
 
-clear();
-console.log('\n' +
-    chalk.red(
-        figlet.textSync(' Dumptruck', { horizontalLayout: 'full', font:'ANSI Shadow'})
-    ) + chalk.yellow(intro.join('\n'))
-);
 
 function getAWSProfiles(callback){
+
+    if (program.profile) callback(false,program.profile);
+
+
     let awsCredFile = fs.readFileSync(awsCredPath).toString();
     let matches = [];
     let foo = awsCredFile.replace(/\[(.*?)\]/g, function(g0,g1){matches.push(g1);});
@@ -120,6 +135,9 @@ function getAWSProfiles(callback){
 }
 
 function getAWSLambdaRegions(callback){
+
+    if (program.region) return callback(false,program.region);
+
     inquirer.prompt(
         [{
             type: 'list',
@@ -136,17 +154,33 @@ function getAWSLambdaRegions(callback){
 }
 
 function getLambdaForYaml(err,callback){
+
+    if (program.lambda) return callback(false,false);
+
+
     try {
         var doc = yaml.safeLoad(fs.readFileSync(localpath + '/serverless.yml', 'utf8'));
         inquirer.prompt(
             [{
                 type: 'confirm',
                 name: 'useYaml',
-                message: 'Filter from local YAML file?',
+                message: 'Filter from local YAML file? ' + doc.service,
                 default: true
             }]
         ).then(function( answer ) {
-            callback(false,answer.useYaml ? doc.service : false);
+
+            exec('serverless info', {cwd: localpath}, function(err, stdout, stderr) {
+                let resolution = stdout.toString().split('Service Information');
+                let functionsList = false;
+                if(resolution.length > 0){
+                    let slslInfoYaml = yaml.safeLoad(resolution[1]);
+                    functionsList = slslInfoYaml.functions ? Object.keys(slslInfoYaml.functions).map(fnkey=>{
+                        return slslInfoYaml.functions[fnkey];
+                    }) : false;
+                }
+                callback(false,answer.useYaml ? functionsList : false);
+            });
+
         });
     } catch (e) {
         callback(false,false);
@@ -154,11 +188,14 @@ function getLambdaForYaml(err,callback){
 }
 
 function getLambdaForProfile(err,callback){
+
+    if (program.lambda) return callback(false,false);
+
     if(err || !selectOptions.profile){
         console.log(chalk.red(err || 'No Profile or Region'));
         process.exit();
     } else {
-        var countdown = new Spinner('Cant find lamdba in current path, checking aws...  ', truckLoader);
+        var countdown = new Spinner('Fetching lambda list from AWS ...  ', truckLoader);
         countdown.start();
         var credentials = new AWS.SharedIniFileCredentials({
             profile: selectOptions.profile
@@ -184,6 +221,9 @@ function getLambdaForProfile(err,callback){
 
 
 function selectLamda(err,lambdas,callback){
+
+    if (program.lambda) return callback(false,program.lambda);
+
     if(err || !lambdas){
         console.log(chalk.red(err || 'No Lamdbas Found'));
         process.exit();
@@ -196,7 +236,7 @@ function selectLamda(err,lambdas,callback){
                     flatLambdas.sort((x,y)=> (x === prefs.awsLambda ? -1 : y === prefs.awsLambda ? 1 : 0));
                 }
                 if(selectOptions.filter){
-                    flatLambdas = flatLambdas.filter(f => f.startsWith(selectOptions.filter));
+                    flatLambdas = flatLambdas.filter(f => (selectOptions.filter.indexOf(f) > -1));
                 }
                 var fuzzyResult = fuzzy.filter(input, flatLambdas);
                 resolve(fuzzyResult.map(function(el) {
@@ -307,30 +347,94 @@ function startlogs() {
 }
 
 process.on('SIGINT', function() {
+    let prevOpts = [
+        'dumptruck -p ',
+        '"' + prefs.awsProfile + '"',
+        ' -r',
+        '"' + prefs.awsRegion.split(' ')[0] + '"',
+        '-l',
+        '"' + prefs.awsLambda + '"'
+    ].join(' ');
+
     console.log('\n' +
-        chalk.red('Ok Bye')
+        chalk.red('Ok Bye') +
+        '\n' +
+        chalk.grey('Want to invoke this log dumptruck again directly? use: ') +
+        chalk.green(prevOpts)
     );
     process.exit();
 });
 
-// 1. Get AWS Profile
-getAWSProfiles((err,profile)=>{
-    selectOptions.profile = profile;
-    getAWSLambdaRegions((err,region)=>{
-        let matchedRegion = awsLambdaRegions.find(l => l.flat === region);
-        selectOptions.region = matchedRegion.unique || false;
-        getLambdaForYaml(err,(err,filter)=>{
-            selectOptions.filter = filter;
-            getLambdaForProfile(err,(err,lambdas)=>{
-                selectLamda(err,lambdas,(err,lambda)=>{
-                    prefs.awsLambda = lambda;
-                    selectOptions.lambda = lambda;
-                    startlogs();
+function launchApp() {
+    showIntro();
+    if (!prefs.agreeTerms) {
+        // terms
+        let termsText = [chalk.grey('-------\n'),
+        'THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,',
+        'EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES ',
+        'OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND ',
+        'NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS ',
+        'BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN ',
+        'AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF ',
+        'OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS ',
+        'IN THE SOFTWARE.',
+        chalk.grey('\n-------\n'),
+        'This tool uses locally stored AWS credentials to access your Lambda groups and Cloudwatch logs ',
+        'via the AWS API\'s and CLI tools. \n',
+        'At the time of writing, there are no hard rate limiting or pricing on these API requests, ',
+        'if in the future, any limits or pricing is introduced, dumptruck.io and any associated parties ',
+        'will NOT be held liable for any cost or API limit repercussions.',
+        chalk.grey('\n-------\n'),
+        ].join('');
+        inquirer.prompt([
+            {
+                type: 'list',
+                name: 'terms',
+                message: chalk.red('Please read and agree to these terms of use before proceeding') + '\n' + termsText,
+                choices: [
+                    {value: false, name: chalk.grey('I have not read terms')},
+                    {value: false, name: chalk.red('I have read terms, and DO NOT agree')},
+                    {value: true, name: chalk.green('I have read terms and DO AGREE')},
+                ]
+            }
+        ]).then(function (answer) {
+            if (!answer.terms) {
+                clear();
+                console.log('\n' + chalk.green('http://dumptruck.io  🚛\nPlease agree to terms before use'));
+                process.exit();
+            } else {
+                prefs.agreeTerms = true;
+                clear();
+                launchApp();
+            }
+        });
+    } else {
+        // 1. Get AWS Profile
+        getAWSProfiles((err, profile) => {
+            selectOptions.profile = profile;
+            getAWSLambdaRegions((err, region) => {
+                if (program.region){
+                    selectOptions.region = program.region
+                } else {
+                    let matchedRegion = awsLambdaRegions.find(l => l.flat === region);
+                    selectOptions.region = matchedRegion.unique || false;
+                }
+
+                getLambdaForYaml(err, (err, filter) => {
+                    selectOptions.filter = filter;
+                    getLambdaForProfile(err, (err, lambdas) => {
+                        selectLamda(err, lambdas, (err, lambda) => {
+                            prefs.awsLambda = lambda;
+                            selectOptions.lambda = lambda;
+                            startlogs();
+                        })
+                    })
                 })
             })
-        })
-    })
-});
+        });
+    }
+}
+launchApp();
 
 /*
 
