@@ -11,6 +11,10 @@
     "dumptruck": "./index.js",
     "dtrk": "./index.js"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/withreason/dumptruck.git"
+  },
   "author": "withreason.co.uk",
   "license": "ISC",
   "dependencies": {
