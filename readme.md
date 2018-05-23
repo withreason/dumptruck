@@ -20,7 +20,7 @@ A Node CLI Helper to fetch Lambda logs from Cloudwatch.
 To get started, `npm install dumptruck -g`.
 
 To view logs, simply run `dumptruck`. If you are in a serverless project,
-it will try to pull config from your `serverless.yaml`.
+it will try to pull config from a `serverless.yaml` in the current working directory.
 
 Once dumptruck has launched, it will guide you through prompts to select
 the correct log group, these selections are made with your keyboard and are
